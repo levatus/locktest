@@ -1,39 +1,73 @@
 import * as NavigationBar from "expo-navigation-bar";
 import { useState } from "react";
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  NativeModules,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { startLock, stopLock } from "../modules/LockTask";
 
 export default function LockScreen() {
   const [isLocked, setIsLocked] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
+  const moduleLoaded = Platform.OS === "android"
+    ? !!(NativeModules as Record<string, unknown>).LockTaskModule
+    : true;
+
   const handleLock = async () => {
-    await startLock();
-    if (Platform.OS === "android") {
-      await NavigationBar.setVisibilityAsync("hidden");
+    setLastError(null);
+    try {
+      await startLock();
+      if (Platform.OS === "android") {
+        await NavigationBar.setVisibilityAsync("hidden");
+      }
+      setIsLocked(true);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastError(msg);
+      Alert.alert("Lock failed", msg);
     }
-    setIsLocked(true);
   };
 
   const handleUnlock = async () => {
-    await stopLock();
-    if (Platform.OS === "android") {
-      await NavigationBar.setVisibilityAsync("visible");
+    setLastError(null);
+    try {
+      await stopLock();
+      if (Platform.OS === "android") {
+        await NavigationBar.setVisibilityAsync("visible");
+      }
+      setIsLocked(false);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastError(msg);
+      Alert.alert("Unlock failed", msg);
     }
-    setIsLocked(false);
   };
 
   return (
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
       ]}
     >
       <Text style={styles.statusLabel}>
         {isLocked ? "LOCKED" : "UNLOCKED"}
+      </Text>
+
+      <Text style={[
+        styles.moduleStatus,
+        { color: moduleLoaded ? "#4ade80" : "#f87171" }
+      ]}>
+        {moduleLoaded ? "✓ Native module loaded" : "✗ Native module NOT found"}
       </Text>
 
       {!isLocked ? (
@@ -55,6 +89,12 @@ export default function LockScreen() {
           <Text style={styles.buttonText}>Unlock</Text>
         </TouchableOpacity>
       )}
+
+      {lastError && (
+        <Text style={styles.errorText} numberOfLines={4}>
+          ⚠ {lastError}
+        </Text>
+      )}
     </View>
   );
 }
@@ -65,13 +105,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#0d0d0d",
     alignItems: "center",
     justifyContent: "center",
-    gap: 36,
+    gap: 24,
+    paddingHorizontal: 24,
   },
   statusLabel: {
     fontSize: 14,
     fontWeight: "600",
     letterSpacing: 3,
     color: "#6b7280",
+  },
+  moduleStatus: {
+    fontSize: 12,
+    fontWeight: "500",
+    letterSpacing: 1,
   },
   button: {
     width: 260,
@@ -100,5 +146,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#ffffff",
     letterSpacing: 1,
+  },
+  errorText: {
+    color: "#f87171",
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 18,
   },
 });
