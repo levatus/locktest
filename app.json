@@ -34,7 +34,8 @@
           "origin": "https://replit.com/"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "./plugins/withDeviceAdmin"
     ],
     "experiments": {
       "typedRoutes": true
