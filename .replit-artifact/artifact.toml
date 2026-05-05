@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/locktest/"
+title = "Locktest"
+version = "1.0.0"
+id = "artifacts/locktest"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+name = "expo"
+paths = [ "/locktest/" ]
+localPort = 21903
+autoStart = false
+
+[services.development]
+run = "pnpm --filter @workspace/locktest run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/locktest", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/locktest", "run", "serve" ]
+
+[services.env]
+PORT = "21903"
+BASE_PATH = "/locktest/"
