@@ -1,0 +1,52 @@
+name: Build Locktest APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK (EAS)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm --filter locktest install
+
+      - name: Set up EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK via EAS
+        working-directory: artifacts/locktest
+        run: eas build --platform android --profile production --non-interactive
+
+      - name: Print build link
+        working-directory: artifacts/locktest
+        run: |
+          echo "Fetching build details from EAS..."
+          BUILD_JSON=$(eas build:list --platform android --limit 1 --json --non-interactive 2>/dev/null || echo "[]")
+          BUILD_URL=$(echo "$BUILD_JSON" | node -e "
+            const builds = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+            const b = builds[0];
+            if (!b) { console.log('No build found yet — check https://expo.dev'); process.exit(0); }
+            if (b.artifacts && b.artifacts.buildUrl) {
+              console.log('APK download URL: ' + b.artifacts.buildUrl);
+            } else {
+              console.log('Build page: https://expo.dev/accounts/' + (b.project && b.project.ownerAccount ? b.project.ownerAccount.name : '[account]') + '/projects/locktest/builds/' + b.id);
+            }
+          " 2>/dev/null || echo "Visit https://expo.dev to find your build")
+          echo "$BUILD_URL"
