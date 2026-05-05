@@ -1,7 +1,8 @@
 import * as NavigationBar from "expo-navigation-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
+  BackHandler,
   NativeModules,
   Platform,
   StyleSheet,
@@ -17,6 +18,12 @@ export default function LockScreen() {
   const [isLocked, setIsLocked] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (!isLocked) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => true);
+    return () => subscription.remove();
+  }, [isLocked]);
 
   const moduleLoaded = Platform.OS === "android"
     ? !!(NativeModules as Record<string, unknown>).LockTaskModule
