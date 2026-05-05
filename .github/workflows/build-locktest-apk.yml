@@ -22,7 +22,7 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: pnpm --filter locktest install
+        run: pnpm --filter @workspace/locktest install
 
       - name: Set up EAS CLI
         uses: expo/expo-github-action@v8
